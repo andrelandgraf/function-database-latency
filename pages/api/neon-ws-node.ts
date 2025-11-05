@@ -2,6 +2,9 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { Pool } from "@neondatabase/serverless";
 
 const start = Date.now();
+// Create pool at module level to reuse connections across warm invocations
+// This is crucial for WebSocket to demonstrate connection reuse benefits
+const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL! });
 
 export default async function handler(
   req: NextApiRequest,
@@ -10,8 +13,6 @@ export default async function handler(
   const { count } = req.query;
 
   const time = Date.now();
-
-  const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL! });
 
   let data = null;
   for (let i = 0; i < toNumber(count); i++) {
@@ -23,7 +24,7 @@ export default async function handler(
     data = result.rows;
   }
 
-  await pool.end();
+  // Don't end the pool - keep connections alive for reuse
 
   return res.status(200).json({
     data,

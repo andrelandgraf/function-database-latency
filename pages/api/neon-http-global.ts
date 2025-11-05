@@ -6,12 +6,11 @@ export const config = {
 };
 
 const start = Date.now();
+const sql = neon(process.env.NEON_DATABASE_URL);
 
 export default async function api(req: Request, ctx: any) {
   const count = toNumber(new URL(req.url).searchParams.get("count"));
   const time = Date.now();
-
-  const sql = neon(process.env.NEON_DATABASE_URL);
 
   let data = null;
   for (let i = 0; i < count; i++) {

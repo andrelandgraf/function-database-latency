@@ -6,12 +6,13 @@ export const config = {
 };
 
 const start = Date.now();
+// Create pool at module level to reuse connections across warm invocations
+// This is crucial for WebSocket to demonstrate connection reuse benefits
+const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL! });
 
 export default async function api(req: Request, ctx: any) {
   const count = toNumber(new URL(req.url).searchParams.get("count"));
   const time = Date.now();
-
-  const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL! });
 
   let data = null;
   for (let i = 0; i < count; i++) {
@@ -23,7 +24,7 @@ export default async function api(req: Request, ctx: any) {
     data = result.rows;
   }
 
-  await pool.end();
+  // Don't end the pool - keep connections alive for reuse
 
   return Response.json(
     {
