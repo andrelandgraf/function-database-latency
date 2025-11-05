@@ -3,4 +3,4 @@ export const config = {
   regions: ["iad1"],
 };
 
-export { default } from "./neon-drizzle-global";
+export { default } from "./neon-drizzle-http-global";
