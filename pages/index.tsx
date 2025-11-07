@@ -4,31 +4,29 @@ import { Select, SelectItem } from "@tremor/react";
 import Head from "next/head";
 import GithubCorner from "@/components/github-corner";
 
-const NODE_AVAILABLE = ["neon-http", "neon-ws", "neon-drizzle-http"];
-const NODE_ONLY = ["neon-tcp"];
+const DATA_SERVICE_NAMES = {
+  "neon-tcp": "Neon pg (TCP)",
+  "neon-http": "Neon HTTP",
+  "neon-ws": "Neon WebSocket",
+  "neon-drizzle-http": "Neon Drizzle HTTP",
+};
 
-type Region = "regional" | "global" | "node";
+const CHART_COLORS = ["purple", "blue", "cyan", "emerald", "amber", "rose", "indigo", "pink"];
 
 export default function Page() {
   const [isTestRunning, setIsTestRunning] = useState(false);
-  const [shouldTestGlobal, setShouldTestGlobal] = useState(true);
-  const [shouldTestRegional, setShouldTestRegional] = useState(true);
-  const [shouldTestNode, setShouldTestNode] = useState(true);
   const [queryCount, setQueryCount] = useState(1);
   const [sampleCount, setSampleCount] = useState(50);
   const [dataService, setDataService] = useState("");
-  const [data, setData] = useState({
-    regional: [],
-    global: [],
-    node: [],
-  });
+  const [data, setData] = useState<Record<string, any[]>>({});
+  const [lastParams, setLastParams] = useState({ queryCount: 1, sampleCount: 50 });
 
   const runTest = useCallback(
-    async (dataService: string, type: Region, queryCount: number) => {
+    async (dataService: string, queryCount: number) => {
       try {
         const start = Date.now();
         const res = await fetch(
-          `/api/${dataService}-${type}?count=${queryCount}`,
+          `/api/${dataService}-node?count=${queryCount}`,
         );
         const data = await res.json();
         const end = Date.now();
@@ -46,45 +44,35 @@ export default function Page() {
 
   const onRunTest = useCallback(async () => {
     setIsTestRunning(true);
-    setData({ regional: [], global: [], node: [] });
+    
+    // Check if parameters have changed - if so, clear all data
+    if (lastParams.queryCount !== queryCount || lastParams.sampleCount !== sampleCount) {
+      setData({});
+      setLastParams({ queryCount, sampleCount });
+    }
 
+    // Clear data for this specific service if it exists (rerun scenario)
+    setData((prevData) => {
+      const newData = { ...prevData };
+      delete newData[dataService];
+      return newData;
+    });
+
+    // Run the test and collect data
+    const results = [];
     for (let i = 0; i < sampleCount; i++) {
-      let regionalValue = null;
-      let globalValue = null;
-      let nodeValue = null;
-
-      if (shouldTestRegional) {
-        regionalValue = await runTest(dataService, "regional", queryCount);
-      }
-
-      if (shouldTestGlobal) {
-        globalValue = await runTest(dataService, "global", queryCount);
-      }
-
-      if (shouldTestNode) {
-        nodeValue = await runTest(dataService, "node", queryCount);
-      }
-
-      setData((data) => {
-        return {
-          ...data,
-          regional: [...data.regional, regionalValue],
-          global: [...data.global, globalValue],
-          node: [...data.node, nodeValue],
-        };
-      });
+      const nodeValue = await runTest(dataService, queryCount);
+      results.push(nodeValue);
+      
+      // Update data incrementally for live feedback
+      setData((prevData) => ({
+        ...prevData,
+        [dataService]: [...(prevData[dataService] || []), nodeValue],
+      }));
     }
 
     setIsTestRunning(false);
-  }, [
-    runTest,
-    queryCount,
-    dataService,
-    shouldTestGlobal,
-    shouldTestRegional,
-    shouldTestNode,
-    sampleCount,
-  ]);
+  }, [runTest, queryCount, dataService, sampleCount, lastParams]);
 
   return (
     <main className="p-6 max-w-5xl flex flex-col gap-3 m-auto">
@@ -104,9 +92,8 @@ export default function Page() {
         Vercel Functions + Database Latency
       </h1>
       <p>
-        Observe the latency querying different data services from varying
-        compute locations using the <Code className="text-xs">edge</Code> and{" "}
-        <Code className="text-xs">node</Code> runtimes of{" "}
+        Observe the latency querying different data services using the{" "}
+        <Code className="text-xs">node</Code> runtime of{" "}
         <a href="https://vercel.com/docs/functions">Vercel Functions</a>. We
         built this playground to demonstrate different data access patterns and
         how they can impact latency through sequential data requests (i.e.
@@ -141,15 +128,7 @@ export default function Page() {
               data-testid="database-dropdown"
               className="max-w-xs"
               placeholder="Select Database"
-              onValueChange={(v) => {
-                // Reset all checkbox values
-                setShouldTestGlobal(!NODE_ONLY.includes(v));
-                setShouldTestRegional(!NODE_ONLY.includes(v));
-                setShouldTestNode(
-                  NODE_ONLY.includes(v) || NODE_AVAILABLE.includes(v),
-                );
-                setDataService(v);
-              }}
+              onValueChange={(v) => setDataService(v)}
             >
               <SelectItem
                 data-testid="neon-tcp"
@@ -177,55 +156,6 @@ export default function Page() {
               </SelectItem>
             </Select>
           </div>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <p className="font-bold">Location</p>
-          <p className="text-gray-600 dark:text-gray-300 text-sm">
-            Vercel Functions run in Edge or Node runtimes. In Edge runtimes,
-            multiple regions are supported (by default they&apos;re global, but
-            it&apos;s possible to express a region preference via the{" "}
-            <Code className="text-xs">region</Code> setting).
-          </p>
-          <p className="text-sm flex gap-3 flex-wrap gap-y-1">
-            {!NODE_ONLY.includes(dataService) && (
-              <label className="flex items-center gap-2 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  name="region"
-                  value="global"
-                  checked={shouldTestGlobal}
-                  onChange={(e) => setShouldTestGlobal(e.target.checked)}
-                />{" "}
-                Global function (Edge)
-              </label>
-            )}
-            {!NODE_ONLY.includes(dataService) && (
-              <label className="flex items-center gap-2 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  name="region"
-                  value="regional"
-                  checked={shouldTestRegional}
-                  onChange={(e) => setShouldTestRegional(e.target.checked)}
-                />{" "}
-                Regional function (Edge | US East)
-              </label>
-            )}
-            {(NODE_AVAILABLE.includes(dataService) ||
-              NODE_ONLY.includes(dataService)) && (
-              <label className="flex items-center gap-2 whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  name="node"
-                  value="node"
-                  checked={shouldTestNode}
-                  onChange={(e) => setShouldTestNode(e.target.checked)}
-                />{" "}
-                Serverless function (Node | US East)
-              </label>
-            )}
-          </p>
         </div>
 
         <div className="flex flex-col gap-1">
@@ -315,22 +245,13 @@ export default function Page() {
             data-testid="run-test"
             onClick={onRunTest}
             loading={isTestRunning}
-            disabled={
-              dataService === "" ||
-              (!shouldTestGlobal && !shouldTestRegional && !shouldTestNode)
-            }
+            disabled={dataService === ""}
           >
             Run Test
           </Button>
-          {!shouldTestGlobal && !shouldTestRegional && !shouldTestNode && (
-            <p className="text-gray-600 dark:text-gray-300 text-sm ml-4">
-              You need to select at least one <strong>Location</strong> to run
-              the benchmark.
-            </p>
-          )}
         </div>
 
-        {data.regional.length || data.global.length || data.node.length ? (
+        {Object.keys(data).length > 0 ? (
           <Grid className="gap-5" numItems={1}>
             <Card>
               <Title>Latency distribution (processing time)</Title>
@@ -343,23 +264,45 @@ export default function Page() {
               <AreaChart
                 className="mt-6"
                 data={new Array(sampleCount).fill(0).map((_, i) => {
-                  return {
-                    attempt: `#${i + 1}`,
-                    "Regional Edge": data.regional[i]
-                      ? data.regional[i].queryDuration
-                      : null,
-                    "Global Edge": data.global[i]
-                      ? data.global[i].queryDuration
-                      : null,
-                    "Node.js": data.node[i] ? data.node[i].queryDuration : null,
-                  };
+                  const dataPoint: any = { attempt: `#${i + 1}` };
+                  Object.keys(data).forEach((service) => {
+                    const serviceName = DATA_SERVICE_NAMES[service] || service;
+                    dataPoint[serviceName] = data[service][i]
+                      ? data[service][i].queryDuration
+                      : null;
+                  });
+                  return dataPoint;
                 })}
                 index="attempt"
-                categories={["Global Edge", "Regional Edge", "Node.js"]}
-                colors={["indigo", "cyan", "purple"]}
+                categories={Object.keys(data).map((service) => DATA_SERVICE_NAMES[service] || service)}
+                colors={CHART_COLORS.slice(0, Object.keys(data).length)}
                 valueFormatter={dataFormatter}
                 yAxisWidth={48}
               />
+              
+              <div className="mt-4 flex flex-wrap gap-4">
+                {Object.keys(data).map((service, index) => {
+                  const serviceName = DATA_SERVICE_NAMES[service] || service;
+                  const validData = data[service].filter((d) => d !== null && d.queryDuration);
+                  const avg = validData.length > 0
+                    ? validData.reduce((sum, d) => sum + d.queryDuration, 0) / validData.length
+                    : 0;
+                  const avgAfterFirst = validData.length > 1
+                    ? validData.slice(1).reduce((sum, d) => sum + d.queryDuration, 0) / (validData.length - 1)
+                    : avg;
+                  return (
+                    <div key={service} className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: getColorValue(CHART_COLORS[index]) }}
+                      />
+                      <span className="text-sm">
+                        {serviceName}: <strong>{avg.toFixed(2)}ms avg</strong> ({avgAfterFirst.toFixed(2)}ms avg after connecting)
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </Card>
             <Card>
               <Title>Latency distribution (end-to-end)</Title>
@@ -373,23 +316,45 @@ export default function Page() {
               <AreaChart
                 className="mt-6"
                 data={new Array(sampleCount).fill(0).map((_, i) => {
-                  return {
-                    attempt: `#${i + 1}`,
-                    "Regional Edge": data.regional[i]
-                      ? data.regional[i].elapsed
-                      : null,
-                    "Global Edge": data.global[i]
-                      ? data.global[i].elapsed
-                      : null,
-                    "Node.js": data.node[i] ? data.node[i].elapsed : null,
-                  };
+                  const dataPoint: any = { attempt: `#${i + 1}` };
+                  Object.keys(data).forEach((service) => {
+                    const serviceName = DATA_SERVICE_NAMES[service] || service;
+                    dataPoint[serviceName] = data[service][i]
+                      ? data[service][i].elapsed
+                      : null;
+                  });
+                  return dataPoint;
                 })}
                 index="attempt"
-                categories={["Global Edge", "Regional Edge", "Node.js"]}
-                colors={["indigo", "cyan", "purple"]}
+                categories={Object.keys(data).map((service) => DATA_SERVICE_NAMES[service] || service)}
+                colors={CHART_COLORS.slice(0, Object.keys(data).length)}
                 valueFormatter={dataFormatter}
                 yAxisWidth={48}
               />
+              
+              <div className="mt-4 flex flex-wrap gap-4">
+                {Object.keys(data).map((service, index) => {
+                  const serviceName = DATA_SERVICE_NAMES[service] || service;
+                  const validData = data[service].filter((d) => d !== null && d.elapsed);
+                  const avg = validData.length > 0
+                    ? validData.reduce((sum, d) => sum + d.elapsed, 0) / validData.length
+                    : 0;
+                  const avgAfterFirst = validData.length > 1
+                    ? validData.slice(1).reduce((sum, d) => sum + d.elapsed, 0) / (validData.length - 1)
+                    : avg;
+                  return (
+                    <div key={service} className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: getColorValue(CHART_COLORS[index]) }}
+                      />
+                      <span className="text-sm">
+                        {serviceName}: <strong>{avg.toFixed(2)}ms avg</strong> ({avgAfterFirst.toFixed(2)}ms avg after connecting)
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </Card>
           </Grid>
         ) : null}
@@ -400,6 +365,20 @@ export default function Page() {
 
 const dataFormatter = (number: number) =>
   `${Intl.NumberFormat("us").format(number).toString()}ms`;
+
+function getColorValue(colorName: string): string {
+  const colorMap: Record<string, string> = {
+    purple: "#9333ea",
+    blue: "#3b82f6",
+    cyan: "#06b6d4",
+    emerald: "#10b981",
+    amber: "#f59e0b",
+    rose: "#f43f5e",
+    indigo: "#6366f1",
+    pink: "#ec4899",
+  };
+  return colorMap[colorName] || "#6366f1";
+}
 
 function Code({ className = "", children }) {
   return (
