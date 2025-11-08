@@ -6,13 +6,26 @@ import { employees } from "@/db/schema";
 const client = neon(process.env.NEON_DATABASE_URL!);
 const db = drizzle(client);
 
-const start = Date.now();
+const startupMemory: Record<string, number | undefined> = {
+  "neon-drizzle-http": undefined,
+};
+
+function isWarm(id: string): boolean {
+  return !!startupMemory[id];
+}
+
+function setWarm(id: string): void {
+  startupMemory[id] = Date.now();
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
   const { count } = req.query;
+  
+  const connectionId = "neon-drizzle-http";
+  const invocationIsCold = !isWarm(connectionId);
 
   const time = Date.now();
 
@@ -20,11 +33,13 @@ export default async function handler(
   for (let i = 0; i < toNumber(count); i++) {
     data = await db.select().from(employees).limit(10);
   }
+  
+  setWarm(connectionId);
 
   return res.status(200).json({
     data,
     queryDuration: Date.now() - time,
-    invocationIsCold: start === time,
+    invocationIsCold,
   });
 }
 

@@ -276,13 +276,16 @@ export default function Page() {
                 {Object.keys(data).map((service, index) => {
                   const serviceName = DATA_SERVICE_NAMES[service] || service;
                   const validData = data[service].filter((d) => d !== null && d.queryDuration);
+                  const wasCold = isColdStart[service];
+                  
+                  // For warm computes, include all samples in average
+                  // For cold starts, show overall avg and avg after first (excluding connection overhead)
                   const avg = validData.length > 0
                     ? validData.reduce((sum, d) => sum + d.queryDuration, 0) / validData.length
                     : 0;
                   const avgAfterFirst = validData.length > 1
                     ? validData.slice(1).reduce((sum, d) => sum + d.queryDuration, 0) / (validData.length - 1)
                     : avg;
-                  const wasCold = isColdStart[service];
                   
                   return (
                     <div key={service} className="flex flex-col gap-1">
@@ -341,13 +344,16 @@ export default function Page() {
                 {Object.keys(data).map((service, index) => {
                   const serviceName = DATA_SERVICE_NAMES[service] || service;
                   const validData = data[service].filter((d) => d !== null && d.elapsed);
+                  const wasCold = isColdStart[service];
+                  
+                  // For warm computes, include all samples in average
+                  // For cold starts, show overall avg and avg after first (excluding connection overhead)
                   const avg = validData.length > 0
                     ? validData.reduce((sum, d) => sum + d.elapsed, 0) / validData.length
                     : 0;
                   const avgAfterFirst = validData.length > 1
                     ? validData.slice(1).reduce((sum, d) => sum + d.elapsed, 0) / (validData.length - 1)
                     : avg;
-                  const wasCold = isColdStart[service];
                   
                   return (
                     <div key={service} className="flex flex-col gap-1">

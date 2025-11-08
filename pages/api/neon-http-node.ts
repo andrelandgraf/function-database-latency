@@ -1,14 +1,28 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { neon } from "@neondatabase/serverless";
 
-const start = Date.now();
 const sql = neon(process.env.NEON_DATABASE_URL);
+
+const startupMemory: Record<string, number | undefined> = {
+  "neon-http": undefined,
+};
+
+function isWarm(id: string): boolean {
+  return !!startupMemory[id];
+}
+
+function setWarm(id: string): void {
+  startupMemory[id] = Date.now();
+}
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
   const { count } = req.query;
+  
+  const connectionId = "neon-http";
+  const invocationIsCold = !isWarm(connectionId);
 
   const time = Date.now();
 
@@ -19,11 +33,13 @@ export default async function handler(
       FROM "employees" 
       LIMIT 10`;
   }
+  
+  setWarm(connectionId);
 
   return res.status(200).json({
     data,
     queryDuration: Date.now() - time,
-    invocationIsCold: start === time,
+    invocationIsCold,
   });
 }
 
