@@ -92,33 +92,9 @@ export default function Page() {
         Vercel Functions + Database Latency
       </h1>
       <p>
-        Observe the latency querying different data services using the{" "}
-        <Code className="text-xs">node</Code> runtime of{" "}
-        <a href="https://vercel.com/docs/functions">Vercel Functions</a>. We
-        built this playground to demonstrate different data access patterns and
-        how they can impact latency through sequential data requests (i.e.
-        waterfalls).
-      </p>
-      <p>
-        Learn more about{" "}
-        <a
-          href="https://vercel.com/docs/functions"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
-        >
-          Vercel Functions
-        </a>
-        {" or "}
-        <a
-          href="https://vercel.com/templates"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline"
-        >
-          deploy a template
-        </a>
-        .
+        Observe the latency querying Neon Serverless Postgres using different
+        connection methods on Vercel Fluid Compute using the{" "}
+        <Code className="text-xs">node</Code> runtime.
       </p>
       <form className="flex flex-col gap-5 bg-gray-100 dark:bg-gray-800 p-5 my-5 rounded">
         <div className="flex flex-col gap-1">
@@ -260,6 +236,9 @@ export default function Page() {
                 and return the result. Your internet connections <b>will not</b>{" "}
                 influence these results.
               </Text>
+              <Text className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Settings: {queryCount === 1 ? "Single query (no waterfall)" : `${queryCount} serial queries`} • {sampleCount} samples
+              </Text>
 
               <AreaChart
                 className="mt-6"
@@ -311,6 +290,9 @@ export default function Page() {
                 considers the total roundtrip between browser and compute
                 location. Your internet connection and location <b>will</b>{" "}
                 influence these results.
+              </Text>
+              <Text className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Settings: {queryCount === 1 ? "Single query (no waterfall)" : `${queryCount} serial queries`} • {sampleCount} samples
               </Text>
 
               <AreaChart
