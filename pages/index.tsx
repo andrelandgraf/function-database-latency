@@ -19,6 +19,7 @@ export default function Page() {
   const [sampleCount, setSampleCount] = useState(50);
   const [dataService, setDataService] = useState("");
   const [data, setData] = useState<Record<string, any[]>>({});
+  const [isColdStart, setIsColdStart] = useState<Record<string, boolean>>({});
   const [lastParams, setLastParams] = useState({ queryCount: 1, sampleCount: 50 });
 
   const runTest = useCallback(
@@ -48,6 +49,7 @@ export default function Page() {
     // Check if parameters have changed - if so, clear all data
     if (lastParams.queryCount !== queryCount || lastParams.sampleCount !== sampleCount) {
       setData({});
+      setIsColdStart({});
       setLastParams({ queryCount, sampleCount });
     }
 
@@ -60,9 +62,20 @@ export default function Page() {
 
     // Run the test and collect data
     const results = [];
+    let firstInvocationIsCold = false;
+    
     for (let i = 0; i < sampleCount; i++) {
       const nodeValue = await runTest(dataService, queryCount);
       results.push(nodeValue);
+      
+      // Capture the cold start status from the first invocation
+      if (i === 0 && nodeValue && nodeValue.invocationIsCold !== undefined) {
+        firstInvocationIsCold = nodeValue.invocationIsCold;
+        setIsColdStart((prev) => ({
+          ...prev,
+          [dataService]: firstInvocationIsCold,
+        }));
+      }
       
       // Update data incrementally for live feedback
       setData((prevData) => ({
@@ -259,7 +272,7 @@ export default function Page() {
                 yAxisWidth={48}
               />
               
-              <div className="mt-4 flex flex-wrap gap-4">
+              <div className="mt-4 flex flex-col gap-2">
                 {Object.keys(data).map((service, index) => {
                   const serviceName = DATA_SERVICE_NAMES[service] || service;
                   const validData = data[service].filter((d) => d !== null && d.queryDuration);
@@ -269,14 +282,24 @@ export default function Page() {
                   const avgAfterFirst = validData.length > 1
                     ? validData.slice(1).reduce((sum, d) => sum + d.queryDuration, 0) / (validData.length - 1)
                     : avg;
+                  const wasCold = isColdStart[service];
+                  
                   return (
-                    <div key={service} className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getColorValue(CHART_COLORS[index]) }}
-                      />
-                      <span className="text-sm">
-                        {serviceName}: <strong>{avg.toFixed(2)}ms avg</strong> ({avgAfterFirst.toFixed(2)}ms avg after connecting)
+                    <div key={service} className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: getColorValue(CHART_COLORS[index]) }}
+                        />
+                        <span className="text-sm">
+                          {serviceName}: <strong>{avg.toFixed(2)}ms avg</strong>
+                          {wasCold && validData.length > 1 && (
+                            <span> ({avgAfterFirst.toFixed(2)}ms avg after connecting)</span>
+                          )}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-5">
+                        {wasCold ? "• Cold start - includes connection establishment" : "• Warm compute - reusing connection pool"}
                       </span>
                     </div>
                   );
@@ -314,7 +337,7 @@ export default function Page() {
                 yAxisWidth={48}
               />
               
-              <div className="mt-4 flex flex-wrap gap-4">
+              <div className="mt-4 flex flex-col gap-2">
                 {Object.keys(data).map((service, index) => {
                   const serviceName = DATA_SERVICE_NAMES[service] || service;
                   const validData = data[service].filter((d) => d !== null && d.elapsed);
@@ -324,14 +347,24 @@ export default function Page() {
                   const avgAfterFirst = validData.length > 1
                     ? validData.slice(1).reduce((sum, d) => sum + d.elapsed, 0) / (validData.length - 1)
                     : avg;
+                  const wasCold = isColdStart[service];
+                  
                   return (
-                    <div key={service} className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getColorValue(CHART_COLORS[index]) }}
-                      />
-                      <span className="text-sm">
-                        {serviceName}: <strong>{avg.toFixed(2)}ms avg</strong> ({avgAfterFirst.toFixed(2)}ms avg after connecting)
+                    <div key={service} className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: getColorValue(CHART_COLORS[index]) }}
+                        />
+                        <span className="text-sm">
+                          {serviceName}: <strong>{avg.toFixed(2)}ms avg</strong>
+                          {wasCold && validData.length > 1 && (
+                            <span> ({avgAfterFirst.toFixed(2)}ms avg after connecting)</span>
+                          )}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-5">
+                        {wasCold ? "• Cold start - includes connection establishment" : "• Warm compute - reusing connection pool"}
                       </span>
                     </div>
                   );
