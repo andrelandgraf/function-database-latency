@@ -1,9 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { attachDatabasePool } from "@vercel/functions";
 import { Pool } from "@neondatabase/serverless";
 
 // Create pool at module level to reuse connections across warm invocations
 // This is crucial for WebSocket to demonstrate connection reuse benefits
 const pool = new Pool({ connectionString: process.env.NEON_DATABASE_URL! });
+attachDatabasePool(pool);
 
 const startupMemory: Record<string, number | undefined> = {
   "neon-ws": undefined,
