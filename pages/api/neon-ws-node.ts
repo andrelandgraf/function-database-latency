@@ -22,7 +22,7 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   const { count } = req.query;
-  
+
   const connectionId = "neon-ws";
   const invocationIsCold = !isWarm(connectionId);
 
@@ -39,7 +39,7 @@ export default async function handler(
   }
 
   // Don't end the pool - keep connections alive for reuse
-  
+
   setWarm(connectionId);
 
   return res.status(200).json({

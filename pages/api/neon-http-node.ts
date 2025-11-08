@@ -20,7 +20,7 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   const { count } = req.query;
-  
+
   const connectionId = "neon-http";
   const invocationIsCold = !isWarm(connectionId);
 
@@ -33,7 +33,7 @@ export default async function handler(
       FROM "employees" 
       LIMIT 10`;
   }
-  
+
   setWarm(connectionId);
 
   return res.status(200).json({

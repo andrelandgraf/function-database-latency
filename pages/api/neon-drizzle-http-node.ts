@@ -23,7 +23,7 @@ export default async function handler(
   res: NextApiResponse,
 ) {
   const { count } = req.query;
-  
+
   const connectionId = "neon-drizzle-http";
   const invocationIsCold = !isWarm(connectionId);
 
@@ -33,7 +33,7 @@ export default async function handler(
   for (let i = 0; i < toNumber(count); i++) {
     data = await db.select().from(employees).limit(10);
   }
-  
+
   setWarm(connectionId);
 
   return res.status(200).json({
