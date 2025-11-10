@@ -2,7 +2,6 @@ import { Button, Card, Title, AreaChart, Grid, Text } from "@tremor/react";
 import { useCallback, useState } from "react";
 import { Select, SelectItem } from "@tremor/react";
 import Head from "next/head";
-import GithubCorner from "@/components/github-corner";
 
 const DATA_SERVICE_NAMES = {
   "neon-tcp": "Neon pg (TCP)",
@@ -103,23 +102,38 @@ export default function Page() {
   return (
     <main className="p-6 max-w-5xl flex flex-col gap-3 m-auto">
       <Head>
-        <title>Vercel Functions + Database Latency</title>
+        <title>Neon Database Latency - Vercel Fluid Compute</title>
         <meta
           name="description"
-          content="Observe the latency querying different data services from varying compute locations using the `edge` and `node` runtimes of Vercel Functions."
+          content="Observe the latency querying Neon with different connection methods from Vercel Fluid Compute"
         />
         <link rel="icon" href="/favicon.ico" />
-        <meta property="og:image:url" content="/og.png" />
-        <meta name="twitter:image" content="/og.png" />
+        <meta
+          property="og:title"
+          content="Neon Database Latency - Vercel Fluid Compute"
+        />
+        <meta
+          property="og:description"
+          content="Observe the latency querying Neon with different connection methods from Vercel Fluid Compute"
+        />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary" />
+        <meta
+          name="twitter:title"
+          content="Neon Database Latency - Vercel Fluid Compute"
+        />
+        <meta
+          name="twitter:description"
+          content="Observe the latency querying Neon with different connection methods from Vercel Fluid Compute"
+        />
       </Head>
-      <GithubCorner url="https://github.com/vercel-labs/function-database-latency" />
 
       <h1 className="text-2xl font-bold">
-        Vercel Functions + Database Latency
+        Neon Database Latency - Vercel Fluid Compute
       </h1>
       <p>
-        Observe the latency querying Neon Serverless Postgres using different
-        connection methods on Vercel Fluid Compute using the{" "}
+        Observe the latency querying Neon Serverless Postgres with different
+        connection methods from Vercel Fluid Compute using the{" "}
         <Code className="text-xs">node</Code> runtime.
       </p>
       <form className="flex flex-col gap-5 bg-gray-100 dark:bg-gray-800 p-5 my-5 rounded">

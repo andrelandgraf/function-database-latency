@@ -1,6 +1,6 @@
-# Vercel Functions Database Latency - Neon
+# Neon Database Latency - Vercel Fluid Compute
 
-This demo helps observe the latency characteristics of querying Neon database from [Vercel Functions](https://vercel.com/docs/functions) using different transport protocols and ORMs.
+This demo helps observe the latency characteristics of querying Neon database from [Vercel Fluid Compute](https://vercel.com/docs/functions) using different transport protocols and connection methods.
 
 https://db-latency.vercel.app
 

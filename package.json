@@ -1,4 +1,7 @@
 {
+  "name": "neon-database-latency-fluid-compute",
+  "version": "1.0.0",
+  "description": "Observe the latency querying Neon with different connection methods from Vercel Fluid Compute",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
